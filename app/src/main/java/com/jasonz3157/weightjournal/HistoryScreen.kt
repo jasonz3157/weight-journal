@@ -244,31 +244,36 @@ internal fun HistoryDialogs(
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .padding(horizontal = CouiDialogDefaults.buttonEdgePadding)
-                    .padding(top = 12.dp, bottom = 4.dp),
+                    .padding(top = 8.dp, bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        if (activeRecord == null) "补记体重" else "修改体重",
-                        Modifier.weight(2f).semantics { heading() },
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                    )
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                        if (activeRecord != null) {
-                            TextButton(onClick = {
-                                editor.editing = false
-                                editor.deleting = true
-                                editor.error = null
-                            }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            if (activeRecord == null) "补记体重" else "修改体重",
+                            Modifier.weight(2f).semantics { heading() },
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                        )
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                            if (activeRecord != null) {
+                                TextButton(onClick = {
+                                    editor.editing = false
+                                    editor.deleting = true
+                                    editor.error = null
+                                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+                            }
                         }
                     }
+                    SupportingText(editor.date)
                 }
-                SupportingText(editor.date)
                 DecimalField(
                     input = editor.weight,
                     label = "体重",
@@ -425,7 +430,7 @@ private fun DayCell(
             Text(
                 formatNumber(record.kg), Modifier.clearAndSetSemantics { },
                 textAlign = TextAlign.Center,
-                color = if (date == today) colors.onPrimaryContainer else colors.primary,
+                color = colors.onPrimaryContainer,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = 16.sp, stepSize = 0.5.sp),

@@ -82,7 +82,7 @@ internal class JournalViewModel(application: Application) : AndroidViewModel(app
                         client.exchange(settings) { state.value.journal }
                     }
                     updateJournal(state.value.journal.merge(received))
-                    val time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM-dd HH:mm"))
+                    val time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM-dd HH:mm:ss"))
                     state.update { current ->
                         val result = SyncResult.Success.takeIf { received == current.journal }
                         current.finishSync("最近同步 $time", result)

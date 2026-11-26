@@ -244,7 +244,7 @@ private fun TodayBmi(reading: BmiReading, modifier: Modifier = Modifier) {
         BmiLevel.Normal -> colors.onPrimaryContainer to colors.primaryContainer
         BmiLevel.Overweight -> if (dark) Color(0xFFF0D598) to Color(0xFF483A1E) else Color(0xFF6F5017) to Color(0xFFFAEDCA)
         BmiLevel.Moderate -> if (dark) Color(0xFFFFC6A2) to Color(0xFF523522) else Color(0xFF834016) to Color(0xFFFBE8DA)
-        BmiLevel.Severe -> if (dark) Color(0xFFFFC4BD) to Color(0xFF532C2A) else Color(0xFF8A312E) to Color(0xFFFBE2E2)
+        BmiLevel.Severe -> colors.error to if (dark) Color(0xFF532C2A) else Color(0xFFFBE2E2)
     }
     FlowRow(
         modifier = modifier,

@@ -134,7 +134,7 @@ private val DayColors = lightColorScheme(
     surface = Color(0xFFF7F9F6), surfaceBright = Color.White,
     onSurface = Color(0xFF17261F), onSurfaceVariant = Color(0xFF52625A),
     surfaceVariant = Color(0xFFE6EDE7), outline = Color(0xFF6D7D73),
-    outlineVariant = Color(0xFFD5DFD7), error = Color(0xFFAB373A),
+    outlineVariant = Color(0xFFD5DFD7), error = Color(0xFF8C1C2B),
 )
 
 private val NightColors = darkColorScheme(
@@ -144,7 +144,7 @@ private val NightColors = darkColorScheme(
     surface = Color(0xFF1B201D), surfaceBright = Color(0xFF202622),
     onSurface = Color(0xFFEAF0EB), onSurfaceVariant = Color(0xFFB1C0B5),
     surfaceVariant = Color(0xFF303A33), outline = Color(0xFF98A69B),
-    outlineVariant = Color(0xFF3B4840), error = Color(0xFFFFB4B3),
+    outlineVariant = Color(0xFF3B4840), error = Color(0xFFFFD0D4),
 )
 
 @Composable
