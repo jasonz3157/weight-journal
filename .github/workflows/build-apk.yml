@@ -59,7 +59,7 @@ jobs:
         run: |
           certs="$("$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk)"
           printf '%s\n' "$certs"
-          actual_sha256="$(sed -nE 's/^Signer #[0-9]+ certificate SHA-256 digest: ([[:xdigit:]]{64})$/\1/p' <<< "$certs")"
+          actual_sha256="$(sed -nE 's/^.+ certificate SHA-256 digest: ([[:xdigit:]]{64})$/\1/p' <<< "$certs" | sort -fu)"
           if [[ "${actual_sha256,,}" != "$ANDROID_DEBUG_CERT_SHA256" ]]; then
             echo "::error::APK 签名与旧版不一致。预期证书 SHA-256 为 $ANDROID_DEBUG_CERT_SHA256。"
             exit 1
