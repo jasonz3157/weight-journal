@@ -25,6 +25,7 @@ internal data class JournalUiState(
     val today: LocalDate = LocalDate.now(),
     val dav: DavSettings? = null,
     val syncActivity: SyncActivity? = null,
+    val openingSyncPending: Boolean = false,
     val syncStatus: String = "仅本机",
     val syncError: Boolean = false,
     val syncResult: SyncResult? = null,
@@ -36,8 +37,17 @@ internal data class JournalUiState(
     val visibleSyncing: Boolean get() = manuallySyncing || syncActivity == SyncActivity.Opening
     val canSync: Boolean get() = dav != null && storageError == null && syncActivity != SyncActivity.SavingSettings
 
+    fun checkingWeight(key: String): Boolean = openingSyncPending && key == today.toString()
+
+    fun weightWriteError(key: String, expectedWeight: Double?): String? = when {
+        checkingWeight(key) -> "正在同步今日记录，请稍候。"
+        journal.entries[key]?.value != expectedWeight -> "这一天的记录已更新，请重新打开后核对。"
+        else -> null
+    }
+
     fun finishSync(status: String, result: SyncResult?): JournalUiState = copy(
         syncActivity = null,
+        openingSyncPending = false,
         syncStatus = status,
         syncError = result == SyncResult.Failure,
         syncResult = if (visibleSyncing || result == SyncResult.Failure) result else syncResult,
@@ -60,6 +70,7 @@ internal class JournalViewModel(application: Application) : AndroidViewModel(app
                 it.copy(
                     journal = journal.getOrDefault(Journal()),
                     dav = dav.getOrNull(),
+                    openingSyncPending = dav.getOrNull() != null && journal.isSuccess,
                     syncError = dav.isFailure,
                     syncStatus = when {
                         dav.isFailure -> "无法读取 WebDAV 设置，请重新填写。"
@@ -88,7 +99,7 @@ internal class JournalViewModel(application: Application) : AndroidViewModel(app
                         current.finishSync("最近同步 $time", result)
                     }
                 } catch (error: CancellationException) {
-                    state.update { it.copy(syncActivity = null) }
+                    state.update { it.copy(syncActivity = null, openingSyncPending = false) }
                     throw error
                 } catch (error: Exception) {
                     val message = when (error) {
@@ -103,6 +114,10 @@ internal class JournalViewModel(application: Application) : AndroidViewModel(app
     }
 
     fun refreshToday() = state.update { it.copy(today = LocalDate.now()) }
+
+    @MainThread
+    fun setWeight(key: String, value: Double?, expectedWeight: Double?): String? =
+        state.value.weightWriteError(key, expectedWeight) ?: setValue(key, value)
 
     fun setValue(key: String, value: Double?): String? {
         val current = state.value
@@ -128,7 +143,11 @@ internal class JournalViewModel(application: Application) : AndroidViewModel(app
     }
 
     @MainThread
-    fun syncOnOpen() = syncWithStatus(SyncActivity.Opening)
+    fun syncOnOpen() {
+        if (!state.value.canSync) return
+        state.update { it.copy(openingSyncPending = true) }
+        syncWithStatus(SyncActivity.Opening)
+    }
 
     @MainThread
     fun syncManually() = syncWithStatus(SyncActivity.Manual)
@@ -150,6 +169,7 @@ internal class JournalViewModel(application: Application) : AndroidViewModel(app
                 state.update {
                     it.copy(
                         dav = settings,
+                        openingSyncPending = false,
                         syncStatus = if (settings == null) "仅本机" else "等待同步",
                         syncResult = null,
                     )

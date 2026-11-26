@@ -14,8 +14,8 @@ android {
         applicationId = "com.jasonz3157.weightjournal"
         minSdk = 31
         targetSdk = 37
-        versionCode = 21
-        versionName = "1.0.20"
+        versionCode = 22
+        versionName = "1.0.21"
     }
 
     buildFeatures { compose = true }

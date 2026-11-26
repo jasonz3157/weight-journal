@@ -168,7 +168,7 @@ private fun JournalApp(state: JournalUiState, model: JournalViewModel) {
                     Box(Modifier.widthIn(max = 640.dp).fillMaxWidth()) {
                         pageState.SaveableStateProvider(page) {
                             when (page) {
-                                0 -> RecordScreen(padding, state, records, { page = 2 }, model::setValue, model::syncManually)
+                                0 -> RecordScreen(padding, state, records, { page = 2 }, model::setWeight, model::syncManually)
                                 1 -> HistoryScreen(padding, state, records, historyEditor::open)
                                 2 -> SettingsScreen(padding, state, model)
                             }
@@ -177,7 +177,7 @@ private fun JournalApp(state: JournalUiState, model: JournalViewModel) {
                 }
             }
         }
-        HistoryDialogs(historyEditor, records, model::setValue)
+        HistoryDialogs(historyEditor, state, model::setWeight)
     }
 }
 

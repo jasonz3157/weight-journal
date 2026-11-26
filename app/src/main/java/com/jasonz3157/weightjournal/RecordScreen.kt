@@ -82,7 +82,7 @@ internal fun RecordScreen(
     state: JournalUiState,
     records: List<WeightRecord>,
     openSettings: () -> Unit,
-    setValue: (String, Double?) -> String?,
+    setWeight: (String, Double?, Double?) -> String?,
     onRefresh: () -> Unit,
 ) {
     val refresh = rememberPullToRefreshState()
@@ -108,7 +108,7 @@ internal fun RecordScreen(
             )
         },
     ) {
-        RecordList(padding, state, records, openSettings, setValue)
+        RecordList(padding, state, records, openSettings, setWeight)
     }
 }
 
@@ -118,26 +118,32 @@ private fun RecordList(
     state: JournalUiState,
     records: List<WeightRecord>,
     openSettings: () -> Unit,
-    setValue: (String, Double?) -> String?,
+    setWeight: (String, Double?, Double?) -> String?,
 ) {
     val date = state.today
+    val dateKey = date.toString()
     val current = records.lastOrNull()?.takeIf { it.date == date }
     val height = state.journal.height
     val syncing = state.visibleSyncing
     val syncResult = state.syncResult.takeUnless { syncing }
-    var editing by rememberSaveable(date.toString()) { mutableStateOf(false) }
-    var weight by rememberSaveable(date.toString()) { mutableStateOf("") }
-    var error by rememberSaveable { mutableStateOf<String?>(null) }
-    val editingWeight = editing || weight.isNotBlank()
-    val editingExistingWeight = current != null && editingWeight
-    val showSyncStatus = state.dav != null && !editingExistingWeight
+    var editing by rememberSaveable(dateKey) { mutableStateOf(false) }
+    var expectedWeight by rememberSaveable(dateKey) { mutableStateOf<Double?>(null) }
+    var weight by rememberSaveable(dateKey) { mutableStateOf("") }
+    var error by rememberSaveable(dateKey) { mutableStateOf<String?>(null) }
+    val checkingToday = state.checkingWeight(dateKey)
+    val showSyncStatus = state.dav != null && current != null && !editing
     val stampSpace = if (showSyncStatus) syncStampWidth - 16.dp else 0.dp
     val focus = LocalFocusManager.current
     val submit = {
         val value = weight.trim().replace(',', '.').toDoubleOrNull()
-        error = if (value == null || value !in 1.0..1000.0) "请输入 1–1000 kg 的体重。" else setValue(date.toString(), value)
+        error = when {
+            checkingToday -> "正在同步今日记录，请稍候。"
+            value == null || value !in 1.0..1000.0 -> "请输入 1–1000 kg 的体重。"
+            else -> setWeight(dateKey, value, expectedWeight)
+        }
         if (error == null) {
             editing = false
+            expectedWeight = null
             weight = ""
             focus.clearFocus()
         }
@@ -156,19 +162,26 @@ private fun RecordList(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             SectionTitle(
-                                if (current == null) "记录体重" else if (editingExistingWeight) "修改体重" else "今日体重",
+                                if (editing) "修改体重" else if (current == null) "记录体重" else "今日体重",
                                 modifier = Modifier.weight(1f),
                             )
-                            if (current != null) {
+                            if (current != null || editing) {
                                 Text(
-                                    text = if (editingExistingWeight) "取消" else "修改",
+                                    text = if (editing) "取消" else "修改",
                                     modifier = Modifier.widthIn(min = 48.dp)
                                         .clip(RoundedCornerShape(percent = 50))
                                         .clickable(role = Role.Button) {
-                                            editing = !editingExistingWeight
-                                            weight = if (editingExistingWeight) "" else formatNumber(current.kg, "0.###############")
+                                            if (editing) {
+                                                weight = ""
+                                                expectedWeight = null
+                                                focus.clearFocus()
+                                                editing = false
+                                            } else if (current != null) {
+                                                expectedWeight = current.kg
+                                                if (weight.isBlank()) weight = formatNumber(current.kg, "0.###############")
+                                                editing = true
+                                            }
                                             error = null
-                                            if (editingExistingWeight) focus.clearFocus()
                                         }
                                         .padding(horizontal = 12.dp),
                                     color = MaterialTheme.colorScheme.primary,
@@ -179,20 +192,25 @@ private fun RecordList(
                         }
                         SupportingText(date.format(DateTimeFormatter.ofPattern("M月d日 · EEEE", java.util.Locale.SIMPLIFIED_CHINESE)))
                     }
-                    if (current == null || editingWeight) {
+                    if (current == null || editing) {
+                        if (checkingToday) {
+                            SupportingText("正在同步今日记录，完成后可保存。")
+                        } else if (current == null && state.syncError && syncResult == SyncResult.Failure) {
+                            SupportingText("同步失败，可以先离线保存。", error = true)
+                        }
                         DecimalField(weight, "体重", "kg", { weight = it; error = null }, submit, error)
-                        Row(Modifier.fillMaxWidth()) {
-                            Button(
-                                onClick = submit,
-                                modifier = Modifier.weight(1f),
-                                enabled = state.storageError == null,
-                            ) {
-                                Text("保存体重")
-                            }
-                            if (showSyncStatus) Spacer(Modifier.width(stampSpace))
+                        Button(
+                            onClick = submit,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = state.storageError == null && !checkingToday,
+                        ) {
+                            Text("保存体重")
                         }
                     } else {
                         TodayWeight(current)
+                        if (weight.isNotBlank()) {
+                            SupportingText("已找到今日记录，点「修改」可使用刚才输入的体重。")
+                        }
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             if (height == null) {
                                 TextButton(onClick = openSettings, modifier = Modifier.weight(1f, fill = false)) {

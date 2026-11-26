@@ -186,12 +186,14 @@ internal fun HistoryScreen(
 internal class HistoryEditor {
     var date by mutableStateOf("")
     var weight by mutableStateOf("")
+    var originalWeight by mutableStateOf<Double?>(null)
     var editing by mutableStateOf(false)
     var deleting by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
 
     fun open(day: LocalDate, record: WeightRecord?) {
         date = day.toString()
+        originalWeight = record?.kg
         weight = record?.kg?.let { formatNumber(it, "0.###############") }.orEmpty()
         error = null
         editing = true
@@ -201,13 +203,14 @@ internal class HistoryEditor {
 @Composable
 internal fun rememberHistoryEditor(): HistoryEditor = rememberSaveable(
     saver = listSaver(
-        save = { listOf(it.date, it.weight, it.editing, it.deleting) },
+        save = { listOf(it.date, it.weight, it.editing, it.deleting, it.originalWeight?.toString().orEmpty()) },
         restore = { saved ->
             HistoryEditor().apply {
                 date = saved[0] as String
                 weight = saved[1] as String
                 editing = saved[2] as Boolean
                 deleting = saved[3] as Boolean
+                originalWeight = (saved.getOrNull(4) as? String)?.toDoubleOrNull()
             }
         },
     ),
@@ -216,16 +219,17 @@ internal fun rememberHistoryEditor(): HistoryEditor = rememberSaveable(
 @Composable
 internal fun HistoryDialogs(
     editor: HistoryEditor,
-    records: List<WeightRecord>,
-    setValue: (String, Double?) -> String?,
+    state: JournalUiState,
+    setWeight: (String, Double?, Double?) -> String?,
 ) {
-    val activeRecord = records.firstOrNull { it.date.toString() == editor.date }
+    val editingExistingWeight = editor.originalWeight != null
+    val checkingToday = state.checkingWeight(editor.date)
     val save = {
         val value = editor.weight.trim().replace(',', '.').toDoubleOrNull()
         editor.error = if (value == null || value !in 1.0..1000.0) {
             "请输入 1–1000 kg 的体重。"
         } else {
-            setValue(editor.date, value)
+            setWeight(editor.date, value, editor.originalWeight)
         }
         if (editor.error == null) editor.editing = false
     }
@@ -236,7 +240,7 @@ internal fun HistoryDialogs(
     Dialog(
         visible = editor.editing,
         onDismissRequest = { editor.editing = false },
-        confirmAction = CouiDialogAction("保存", save),
+        confirmAction = CouiDialogAction("保存", save, enabled = !checkingToday),
         dismissAction = CouiDialogAction("取消", { editor.editing = false }),
         material = material,
         backdrop = backdrop,
@@ -255,7 +259,7 @@ internal fun HistoryDialogs(
                     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                         Spacer(Modifier.weight(1f))
                         Text(
-                            if (activeRecord == null) "补记体重" else "修改体重",
+                            if (editingExistingWeight) "修改体重" else "补记体重",
                             Modifier.weight(2f).semantics { heading() },
                             color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.titleLarge,
@@ -263,7 +267,7 @@ internal fun HistoryDialogs(
                             textAlign = TextAlign.Center,
                         )
                         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                            if (activeRecord != null) {
+                            if (editingExistingWeight) {
                                 TextButton(onClick = {
                                     editor.editing = false
                                     editor.deleting = true
@@ -274,6 +278,7 @@ internal fun HistoryDialogs(
                     }
                     SupportingText(editor.date)
                 }
+                if (checkingToday) SupportingText("正在同步今日记录，完成后可保存。")
                 DecimalField(
                     input = editor.weight,
                     label = "体重",
@@ -292,9 +297,9 @@ internal fun HistoryDialogs(
         title = "删除体重记录？",
         message = editor.error ?: "${editor.date} 的记录将从日记中删除。",
         confirmAction = CouiDialogAction("删除", {
-            editor.error = setValue(editor.date, null)
+            editor.error = setWeight(editor.date, null, editor.originalWeight)
             if (editor.error == null) editor.deleting = false
-        }),
+        }, enabled = !checkingToday),
         dismissAction = CouiDialogAction("取消", { editor.deleting = false }),
         material = material,
         backdrop = backdrop,

@@ -1,7 +1,9 @@
 package com.jasonz3157.weightjournal
 
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -46,5 +48,29 @@ class SyncStatusTest {
         val failed = opening.finishSync("连接超时", SyncResult.Failure)
         assertFalse(failed.visibleSyncing)
         assertEquals(SyncResult.Failure, failed.syncResult)
+    }
+
+    @Test fun anOpeningSyncGuardsTodayUntilTheRemoteRecordHasBeenMerged() {
+        val date = LocalDate.of(2026, 11, 26)
+        val key = date.toString()
+        val opening = JournalUiState(today = date, openingSyncPending = true)
+
+        assertNotNull(opening.weightWriteError(key, null))
+        assertNotNull(opening.copy(syncActivity = SyncActivity.Manual).weightWriteError(key, null))
+        assertNull(opening.weightWriteError(date.minusDays(1).toString(), null))
+
+        val synced = opening.copy(journal = Journal().set(key, 84.3)).finishSync("最近同步", SyncResult.Success)
+        assertNotNull(synced.weightWriteError(key, null))
+        assertNotNull(synced.weightWriteError(key, 85.2))
+        assertNull(synced.weightWriteError(key, 84.3))
+    }
+
+    @Test fun openingSyncWithoutATodayRecordAllowsSavingAfterSuccessOrFailure() {
+        val date = LocalDate.of(2026, 11, 26)
+        val opening = JournalUiState(today = date, openingSyncPending = true)
+
+        for (result in SyncResult.entries) {
+            assertNull(opening.finishSync("同步结束", result).weightWriteError(date.toString(), null))
+        }
     }
 }
