@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.WeightJournal" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#111412</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+    <color name="launcher_dial">#597D60</color>
+    <color name="launcher_trend">#93DC82</color>
+</resources>

@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">体重日记</string>
+    <style name="Theme.WeightJournal" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#EFF3EF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+    <color name="launcher_dial">#82AC93</color>
+    <color name="launcher_trend">#D2F5A6</color>
+</resources>
