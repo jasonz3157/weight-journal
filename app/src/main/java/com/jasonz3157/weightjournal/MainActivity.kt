@@ -184,7 +184,7 @@ private fun JournalApp(state: JournalUiState, model: JournalViewModel) {
 @Composable
 private fun JournalNavigation(selected: Int, onSelect: (Int) -> Unit) {
     val items = listOf(
-        CouiNavigationItem("记录", CouiIcons.Outlined.Pen, CouiIcons.Filled.Pen),
+        CouiNavigationItem("记录", ImageVector.vectorResource(R.drawable.ic_record_pen_outlined), CouiIcons.Filled.Pen),
         CouiNavigationItem(
             "历史",
             ImageVector.vectorResource(R.drawable.ic_history_calendar),
