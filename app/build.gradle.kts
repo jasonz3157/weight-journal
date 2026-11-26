@@ -18,6 +18,12 @@ android {
         versionName = "1.0.21"
     }
 
+    providers.gradleProperty("weightJournalDebugKeystore").orNull?.let { path ->
+        val keystore = file(path)
+        require(keystore.isFile) { "调试密钥库不存在: $keystore" }
+        signingConfigs.getByName("debug").storeFile = keystore
+    }
+
     buildFeatures { compose = true }
 
     compileOptions {
